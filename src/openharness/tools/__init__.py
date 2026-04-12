@@ -45,6 +45,7 @@ from openharness.tools.faz_query_logs_tool import FAZQueryLogsTool
 from openharness.tools.faz_query_security_events_tool import FAZQuerySecurityEventsTool
 from openharness.tools.fortisoar_get_alert_tool import FortiSOARGetAlertTool
 from openharness.tools.fortisoar_list_alerts_tool import FortiSOARListAlertsTool
+from openharness.tools.fortisoar_escalate_alert_tool import FortiSOAREscalateAlertTool
 from openharness.tools.fortisoar_resolve_alert_tool import FortiSOARResolveAlertTool
 from openharness.tools.web_fetch_tool import WebFetchTool
 from openharness.tools.web_search_tool import WebSearchTool
@@ -98,6 +99,7 @@ def create_default_tool_registry(mcp_manager=None) -> ToolRegistry:
         FortiSOARListAlertsTool(),
         FortiSOARGetAlertTool(),
         FortiSOARResolveAlertTool(),
+        FortiSOAREscalateAlertTool(),
     ):
         registry.register(tool)
     if mcp_manager is not None:

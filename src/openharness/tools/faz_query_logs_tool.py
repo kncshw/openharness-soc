@@ -63,7 +63,7 @@ class FAZQueryLogsInput(BaseModel):
         ),
     )
     limit: int = Field(
-        default=100, ge=1, le=100,
+        default=50, ge=1, le=50,
         description=(
             "Maximum sample log entries to show in the output. The tool internally "
             "fetches up to 500 entries for aggregation stats (top IPs, ports, actions) "
@@ -289,5 +289,47 @@ class FAZQueryLogsTool(BaseTool):
                 lines.append(
                     f"  ... ({len(entries) - sample_n} more fetched — see SUMMARY above for aggregated stats)"
                 )
+
+        # Reminder near the decision point — reinforces the system prompt's
+        # [LOG] citation rule at a position close to where the model will
+        # generate the closure notes, reducing instruction fade on small models.
+        if sample_n > 0:
+            lines.extend([
+                "",
+                "REMINDER: Your closure_notes MUST include [LOG] citations from the entries above.",
+                "Format: [LOG] <timestamp> <srcip>:<srcport> -> <dstip>:<dstport> action=<action> app=<app>",
+                "Pick 2 entries that best represent the traffic pattern you observed.",
+            ])
+
+        # Escalation warning: if any entries show external→internal accepted
+        # traffic with data transfer, warn the model prominently. This
+        # reinforces the system prompt's escalation rule at the closest
+        # possible position to the decision point.
+        _RFC1918 = ("10.", "172.16.", "172.17.", "172.18.", "172.19.",
+                     "172.20.", "172.21.", "172.22.", "172.23.", "172.24.",
+                     "172.25.", "172.26.", "172.27.", "172.28.", "172.29.",
+                     "172.30.", "172.31.", "192.168.")
+        inbound_accept_found = False
+        for entry in entries:
+            action = str(entry.get("action", "")).lower()
+            if action not in ("accept", "allow", "pass"):
+                continue
+            srcip = str(entry.get("srcip", ""))
+            dstip = str(entry.get("dstip", ""))
+            sent = int(entry.get("sentbyte", 0))
+            rcvd = int(entry.get("rcvdbyte", 0))
+            src_internal = any(srcip.startswith(p) for p in _RFC1918)
+            dst_internal = any(dstip.startswith(p) for p in _RFC1918)
+            if not src_internal and dst_internal and (sent > 0 or rcvd > 0):
+                inbound_accept_found = True
+                break
+        if inbound_accept_found:
+            lines.extend([
+                "",
+                "⚠ WARNING: This query contains INBOUND ACCEPTED TRAFFIC — an external "
+                "source successfully connected to an internal destination with data transfer. "
+                "You MUST escalate this alert. Do NOT call fortisoar_resolve_alert. "
+                "Output your findings and state: ESCALATION REQUIRED.",
+            ])
 
         return ToolResult(output="\n".join(lines))

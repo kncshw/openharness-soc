@@ -131,6 +131,39 @@ def _extract_action_from_extrainfo(extrainfo) -> str:
     return m.group(1) if m else ""
 
 
+def _classify_ip(ip: str) -> str:
+    """Classify an IP as INTERNAL or EXTERNAL using RFC1918/RFC6598 ranges.
+
+    Returns 'INTERNAL' or 'EXTERNAL'. This is done in code so the LLM never
+    has to do CIDR math — Gemma4 incorrectly classified 172.67.x.x as
+    internal because it pattern-matched '172.' against the 172.16-31 private
+    range without checking the numeric boundary.
+    """
+    from ipaddress import ip_address, ip_network
+    try:
+        addr = ip_address(ip)
+    except ValueError:
+        return "UNKNOWN"
+    # RFC1918 + RFC6598 (CGN) + loopback + link-local
+    private_ranges = (
+        ip_network("10.0.0.0/8"),
+        ip_network("172.16.0.0/12"),      # 172.16.0.0 – 172.31.255.255
+        ip_network("192.168.0.0/16"),
+        ip_network("100.64.0.0/10"),      # RFC6598 CGN
+        ip_network("127.0.0.0/8"),        # loopback
+        ip_network("169.254.0.0/16"),     # link-local
+    )
+    for net in private_ranges:
+        if addr in net:
+            return "INTERNAL"
+    return "EXTERNAL"
+
+
+def _label_ip(ip: str) -> str:
+    """Return 'ip (INTERNAL)' or 'ip (EXTERNAL)'."""
+    return f"{ip} ({_classify_ip(ip)})"
+
+
 def _build_correlation_hints(alert: dict) -> dict:
     """Best-effort extraction of fields useful for FAZ correlation queries.
 
@@ -192,13 +225,17 @@ def _build_correlation_hints(alert: dict) -> dict:
     if event_type:
         hints["event_type"] = str(event_type)
 
-    # IPs (split CSV; FortiSOAR sometimes packs multiple)
-    src_ips = _split_csv(alert.get("sourceIp") or sd_alert.get("epip"))
-    if src_ips:
-        hints["source_ips"] = src_ips
-    dst_ips = _split_csv(alert.get("destinationIp") or sd_alert.get("dstepip"))
-    if dst_ips:
-        hints["destination_ips"] = dst_ips
+    # IPs (split CSV; FortiSOAR sometimes packs multiple).
+    # Each IP is labeled INTERNAL/EXTERNAL by code so the LLM never has to
+    # do CIDR math (Gemma4 misclassified 172.67.x.x as internal).
+    src_ips_raw = _split_csv(alert.get("sourceIp") or sd_alert.get("epip"))
+    if src_ips_raw:
+        hints["source_ips"] = [_label_ip(ip) for ip in src_ips_raw]
+        hints["_source_ips_raw"] = src_ips_raw  # unlabeled, for query templates
+    dst_ips_raw = _split_csv(alert.get("destinationIp") or sd_alert.get("dstepip"))
+    if dst_ips_raw:
+        hints["destination_ips"] = [_label_ip(ip) for ip in dst_ips_raw]
+        hints["_destination_ips_raw"] = dst_ips_raw  # unlabeled, for query templates
 
     # Ports — try structured first, then first related log
     src_port = alert.get("sourcePort") or first_log.get("srcport")
@@ -286,14 +323,16 @@ def _format_correlation_hints(hints: dict) -> str:
                 value = ", ".join(value)
             lines.append(f"{key}: {value}")
 
-    # Suggested correlation queries — only if we have ADOM + at least one IP + detection time
+    # Suggested correlation queries — only if we have ADOM + at least one IP + detection time.
+    # Use _raw IPs (without INTERNAL/EXTERNAL labels) for the query templates
+    # so the FAZ tool receives clean IP addresses.
     adom = hints.get("adom", "")
-    src_ips = hints.get("source_ips", [])
-    dst_ips = hints.get("destination_ips", [])
+    src_ips_raw = hints.get("_source_ips_raw", [])
+    dst_ips_raw = hints.get("_destination_ips_raw", [])
     detection = hints.get("detection_time_faz_local", "")
     plus10 = hints.get("detection_time_plus_10m", "")
 
-    if adom and (src_ips or dst_ips) and detection and plus10:
+    if adom and (src_ips_raw or dst_ips_raw) and detection and plus10:
         lines.append("")
         lines.append("suggested_correlation_queries:")
         lines.append("  # Step 1: All security events 10 min after the event")
@@ -301,8 +340,8 @@ def _format_correlation_hints(hints: dict) -> str:
             f'  faz_query_security_events(adom="{adom}", end_time="{plus10}", '
             f'time_range="10m", log_type="all")'
         )
-        if src_ips:
-            src = src_ips[0]
+        if src_ips_raw:
+            src = src_ips_raw[0]
             lines.append("")
             lines.append("  # Step 2: Source IP traffic 10 min AFTER — did the source come back?")
             lines.append(
@@ -315,8 +354,8 @@ def _format_correlation_hints(hints: dict) -> str:
                 f'  faz_query_logs(adom="{adom}", ip_address="{src}", '
                 f'end_time="{detection}", time_range="10m")'
             )
-        if dst_ips:
-            dst = dst_ips[0]
+        if dst_ips_raw:
+            dst = dst_ips_raw[0]
             lines.append("")
             lines.append("  # Step 4: Destination IP traffic 10 min AFTER — lateral movement check")
             lines.append(
