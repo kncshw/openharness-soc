@@ -1,0 +1,80 @@
+# SOC AI Analyst — production container
+#
+# Packages the OpenHarness runtime + SOC tools + bis-soc wrapper into a
+# minimal Python image. No secrets baked in; all credentials are injected
+# at runtime via environment variables or volume mounts.
+#
+# Build:
+#   docker build -f Dockerfile.soc -t bis-soc:latest .
+#
+# Run (single alert):
+#   docker run --rm --env-file .env \
+#     -v /path/to/fsr-prod.pub:/secrets/fsr-prod.pub:ro \
+#     -v /path/to/fsr-prod.priv:/secrets/fsr-prod.priv:ro \
+#     -v /path/to/soc_whitelist.yaml:/config/soc_whitelist.yaml:ro \
+#     -v soc-sessions:/data/sessions \
+#     bis-soc:latest Alert-109331
+#
+# Run (drain all open alerts):
+#   docker run --rm --env-file .env \
+#     -v /path/to/fsr-prod.pub:/secrets/fsr-prod.pub:ro \
+#     -v /path/to/fsr-prod.priv:/secrets/fsr-prod.priv:ro \
+#     -v /path/to/soc_whitelist.yaml:/config/soc_whitelist.yaml:ro \
+#     -v soc-sessions:/data/sessions \
+#     bis-soc:latest
+#
+# Required env vars (pass via --env-file or -e):
+#   OH_BASE_URL, OH_API_KEY, OH_MODEL, OH_API_FORMAT
+#   FORTISOAR_URL, FORTISOAR_TENANT, FORTISOAR_SOURCE, FORTISOAR_VERIFY_SSL
+#   FORTISOAR_PUBLIC_KEY_FILE=/secrets/fsr-prod.pub
+#   FORTISOAR_PRIVATE_KEY_FILE=/secrets/fsr-prod.priv
+#   FAZ_HOST, FAZ_USER, FAZ_PASSWORD, FAZ_ADOMS, FAZ_VERIFY_SSL
+#   SOC_WHITELIST_FILE=/config/soc_whitelist.yaml
+#   SOC_ALLOWED_TOOLS (set by entrypoint, no need to override)
+#   OH_TEMPERATURE (optional, default 0.2)
+
+FROM python:3.12-slim AS base
+
+# Avoid Python bytecode files and enable unbuffered output for logging
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Install dependencies first (layer caching — deps change less than code)
+COPY pyproject.toml ./
+RUN pip install --no-cache-dir -e . 2>/dev/null || \
+    pip install --no-cache-dir .
+
+# Copy the full source (includes OH runtime + SOC tools + prompts + wrapper)
+COPY src/ src/
+COPY docs/soc-analyst-prompt-min.md docs/
+COPY bin/bis-soc bin/
+
+# Copy the pretty-printer if it exists in the repo; otherwise bis-soc
+# falls back to `cat` gracefully
+COPY bin/oh-pretty.py bin/ 2>/dev/null || true
+
+# Make entrypoints executable
+RUN chmod +x bin/bis-soc
+
+# Create directories for runtime mounts
+RUN mkdir -p /config /secrets /data/sessions
+
+# Default session storage location (override via volume mount)
+ENV OPENHARNESS_SESSIONS_DIR=/data/sessions
+
+# SOC tool filtering — only expose the 5 tools Gemma4 needs
+ENV SOC_ALLOWED_TOOLS="fortisoar_list_alerts,fortisoar_get_alert,fortisoar_resolve_alert,faz_query_logs,faz_query_security_events"
+
+# Default temperature for SOC batch tasks
+ENV OH_TEMPERATURE=0.2
+
+# Health check: verify Python can import the SOC tools
+HEALTHCHECK --interval=60s --timeout=10s --retries=3 \
+    CMD python -c "from openharness.tools._whitelist import load_whitelist; print('ok')" || exit 1
+
+# Entrypoint: bis-soc wrapper. Arguments are passed through:
+#   no args  → drain all open alerts
+#   Alert-NNN → process one alert
+ENTRYPOINT ["bin/bis-soc"]

@@ -1,0 +1,54 @@
+# SOC agent IP/CIDR whitelist
+# ============================
+#
+# Anything in this file overrides the agent's investigation outcome:
+# matching alerts are auto-closed by `python -m openharness.soc_auto_close`
+# WITHOUT invoking the LLM at all. The LLM is only used for alerts that do
+# NOT match this whitelist.
+#
+# Why no LLM for whitelist hits? Whitelisted IPs (scanners, threat-intel
+# collectors, sanctioned tools) produce traffic that LOOKS like attacks --
+# that's why they fire alerts in the first place. Asking a small model to
+# weigh a soft "this is whitelisted" hint against scary FAZ correlation
+# evidence is fighting the model's nature; it will over-weight the visible
+# evidence and escalate. The whitelist exists precisely because the answer
+# is already decided by a human, so no LLM judgment is needed or wanted.
+#
+# Edit policy
+# -----------
+# - Edit by hand only. No tool, script, or agent writes to this file.
+# - Every change MUST go through git review (PR / blame / rollback).
+# - Adding an entry is a deliberate act: think about it, justify it in the
+#   `reason` field, sign with your name in `added_by`, set `added_on`.
+# - A typo in a CIDR can silently auto-close millions of alerts. The loader
+#   refuses prefixes broader than /16 as a guardrail, but that does NOT
+#   replace careful review.
+# - When a temporary exemption (pen-test, etc.) ends, REMOVE the entry. The
+#   `expires_on` field is informational only -- the loader does not enforce
+#   it. Removal is your responsibility.
+#
+# Schema
+# ------
+# Each entry is a YAML mapping with:
+#   ip:             exact IPv4/IPv6 address           (mutually exclusive with cidr)
+#   cidr:           CIDR block, prefix >= /16          (mutually exclusive with ip)
+#   reason:         human-readable justification      (required, min 10 chars)
+#   added_by:       who added this entry              (required)
+#   added_on:       YYYY-MM-DD when added             (required)
+#   expires_on:     YYYY-MM-DD when to remove         (optional, informational)
+#   closure_reason: how to close matching alerts      (optional, defaults to
+#                                                      'Tasks Completed' --
+#                                                      see fortisoar_resolve_alert)
+#
+# Examples below. Delete or replace as needed.
+
+- cidr: 10.125.19.0/24
+  reason: "FortiRecon internal threat-intel collector. Expected to talk to darkweb / suspicious destinations as part of its job. Permanent infrastructure."
+  added_by: kaini
+  added_on: 2026-04-08
+  closure_reason: Risk Accept
+- ip: 154.52.1.166
+  reason: ".Web Filtering URL Category Service that scape and rate malicious sites. contact: christse@fortinet.com"
+  added_by: kaini
+  added_on: 2026-04-10
+  closure_reason: Risk Accept

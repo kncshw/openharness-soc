@@ -1,0 +1,26 @@
+# Secrets — never bake into the image
+.env
+*.pub
+*.priv
+*.key
+*.pem
+
+# Dev/test artifacts
+.venv/
+.git/
+.claude/
+.openharness/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+*.egg-info/
+
+# Session data (mounted at runtime, not baked in)
+sessions/
+
+# Docs not needed at runtime (keep soc-analyst-prompt-min.md)
+docs/*.md
+!docs/soc-analyst-prompt-min.md

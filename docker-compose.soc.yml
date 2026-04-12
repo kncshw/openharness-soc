@@ -1,0 +1,37 @@
+# SOC AI Analyst — Docker Compose
+#
+# Usage:
+#   docker compose -f docker-compose.soc.yml run --rm soc-agent              # drain all open alerts
+#   docker compose -f docker-compose.soc.yml run --rm soc-agent Alert-109331 # single alert
+#
+# Before first run:
+#   1. Copy .env.example to .env and fill in real values
+#   2. Place FortiSOAR key files where the volumes below point
+#   3. Edit config/soc_whitelist.yaml with your whitelist entries
+#   4. docker compose -f docker-compose.soc.yml build
+
+services:
+  soc-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.soc
+    env_file:
+      - .env
+    environment:
+      # Override key file paths to match the container mount points
+      - FORTISOAR_PUBLIC_KEY_FILE=/secrets/fsr-prod.pub
+      - FORTISOAR_PRIVATE_KEY_FILE=/secrets/fsr-prod.priv
+      # Whitelist path inside the container
+      - SOC_WHITELIST_FILE=/config/soc_whitelist.yaml
+    volumes:
+      # FortiSOAR HMAC key files (read-only)
+      - ${FORTISOAR_PUBLIC_KEY_FILE:-./fsr-prod.pub}:/secrets/fsr-prod.pub:ro
+      - ${FORTISOAR_PRIVATE_KEY_FILE:-./fsr-prod.priv}:/secrets/fsr-prod.priv:ro
+      # Whitelist file (read-only, editable on host without rebuild)
+      - ./config/soc_whitelist.yaml:/config/soc_whitelist.yaml:ro
+      # Session logs (persisted across container runs)
+      - soc-sessions:/data/sessions
+
+volumes:
+  soc-sessions:
+    driver: local

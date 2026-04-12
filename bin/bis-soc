@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# bis-soc — drive the SOC AI analyst against FortiSOAR alerts
+#
+# Two modes:
+#   bis-soc Alert-NNN          Process exactly one alert (single invocation)
+#   bis-soc                    Drain mode: process every Open Critical/High
+#                             alert, one per oh -p invocation
+#
+# Each `oh -p` is a fresh conversation. The system prompt's strict per-alert
+# workflow rules ("after 4 queries, decide and stop") are designed for
+# single-alert mode and remain correct here — the wrapper provides the loop
+# at the shell level rather than asking the LLM to iterate.
+#
+# Failures on one alert do NOT stop the loop. Failed alerts stay Open and get
+# picked up by the next drain run.
+#
+# Required env vars (sourced from .env in the repo root):
+#   OH_BASE_URL, OH_API_KEY, OH_MODEL  — vLLM/OpenAI endpoint for the LLM
+#   FORTISOAR_*, FAZ_*                 — backend access for the tools
+#   SOC_WHITELIST_FILE                 — optional, enables whitelist auto-close
+#   SOC_ALLOWED_TOOLS                  — set below, strips irrelevant tools from the LLM's menu
+
+set -euo pipefail
+
+# Strip the tool registry down to only the tools the SOC agent needs.
+# The default registry has 44+ tools (bash, agent, cron, etc.) that waste
+# tokens on every API call and risk confusing the model. Validated against
+# 26-alert drain run session logs: Gemma4 never called anything outside these 5.
+export SOC_ALLOWED_TOOLS="fortisoar_list_alerts,fortisoar_get_alert,fortisoar_resolve_alert,faz_query_logs,faz_query_security_events"
+
+# Resolve repo root regardless of where the user invoked the script from.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+cd "${REPO_ROOT}"
+
+# Source .env so OH_*, FORTISOAR_*, FAZ_*, SOC_* variables are exported. The
+# `set -a` block exports every variable assigned by the file.
+# Source .env if it exists (bare-metal usage). In Docker, env vars are
+# injected via --env-file or -e, so .env may not be present.
+if [[ -f "${REPO_ROOT}/.env" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "${REPO_ROOT}/.env"
+    set +a
+fi
+
+PROMPT_FILE="${REPO_ROOT}/docs/soc-analyst-prompt-min.md"
+if [[ ! -f "${PROMPT_FILE}" ]]; then
+    echo "ERROR: system prompt file not found: ${PROMPT_FILE}" >&2
+    exit 1
+fi
+
+# Find the oh CLI: try venv first (bare-metal), then system PATH (Docker).
+if [[ -x "${REPO_ROOT}/.venv/bin/oh" ]]; then
+    OH_BIN="${REPO_ROOT}/.venv/bin/oh"
+elif command -v oh &>/dev/null; then
+    OH_BIN="$(command -v oh)"
+else
+    echo "ERROR: oh CLI not found. Install via pip or activate the venv." >&2
+    exit 1
+fi
+
+# Optional pretty-printer. Check repo bin/ first, then ~/bin/, then skip.
+PRETTY_PRINTER=""
+if [[ -x "${REPO_ROOT}/bin/oh-pretty.py" ]]; then
+    PRETTY_PRINTER="${REPO_ROOT}/bin/oh-pretty.py"
+elif [[ -x "${HOME}/bin/oh-pretty.py" ]]; then
+    PRETTY_PRINTER="${HOME}/bin/oh-pretty.py"
+fi
+pretty_filter() {
+    if [[ -n "${PRETTY_PRINTER}" && -x "${PRETTY_PRINTER}" ]]; then
+        "${PRETTY_PRINTER}"
+    else
+        cat
+    fi
+}
+
+run_one() {
+    local alert_id="$1"
+    echo "==== Processing ${alert_id} ===="
+    # Each invocation is a fresh conversation. The user message is singular
+    # ("alert", not "alerts"), matching the system prompt's per-alert workflow.
+    set +e
+    # SOC_ALLOWED_TOOLS (exported above) strips the registry down to only
+    # the 5 tools the SOC agent uses, before any API call is made to vLLM.
+    "${OH_BIN}" -p "analyze FortiSOAR alert ${alert_id} and add closure notes to resolve it if there are no security concern" \
+        --api-format openai \
+        --base-url "${OH_BASE_URL}" \
+        --api-key "${OH_API_KEY}" \
+        --model "${OH_MODEL}" \
+        --system-prompt "$(cat "${PROMPT_FILE}")" \
+        --permission-mode full_auto \
+        --output-format stream-json 2>&1 | pretty_filter
+    local rc="${PIPESTATUS[0]}"
+    set -e
+    if [[ "${rc}" -ne 0 ]]; then
+        echo "WARN: oh -p exited with code ${rc} for ${alert_id} — continuing" >&2
+    fi
+    echo
+}
+
+drain_mode() {
+    # Pull the full open queue once via the dedicated CLI helper. The helper
+    # bypasses the LLM tool's 20-cap and prints one alert ID per line. We
+    # capture into a variable instead of piping into `while read` so a failure
+    # in the helper doesn't silently produce zero alerts.
+    local alert_ids
+    if ! alert_ids="$(PYTHONPATH=src python -m openharness.soc_list_open_alerts)"; then
+        echo "ERROR: failed to list open alerts" >&2
+        exit 1
+    fi
+
+    if [[ -z "${alert_ids}" ]]; then
+        echo "No Open Critical/High alerts to process."
+        return 0
+    fi
+
+    local count
+    count="$(printf '%s\n' "${alert_ids}" | wc -l | tr -d '[:space:]')"
+    echo "Drain mode: ${count} alert(s) to process"
+    echo
+
+    while IFS= read -r alert_id; do
+        [[ -n "${alert_id}" ]] || continue
+        run_one "${alert_id}"
+    done <<< "${alert_ids}"
+
+    echo "==== Drain complete ===="
+}
+
+# ---- argument dispatch -----------------------------------------------------
+
+case "$#" in
+    0)
+        drain_mode
+        ;;
+    1)
+        run_one "$1"
+        ;;
+    *)
+        echo "usage: bis-soc [Alert-NNN]" >&2
+        echo "  bis-soc Alert-NNN   process one alert" >&2
+        echo "  bis-soc             drain all Open Critical/High alerts" >&2
+        exit 1
+        ;;
+esac

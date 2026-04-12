@@ -1,0 +1,49 @@
+# Secrets — NEVER commit
+.env
+*.pub
+*.priv
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+*.so
+.python-version
+
+# Test / lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OpenHarness runtime data
+.openharness/
+.claude/
+react_tui_smoke.txt
+
+# React TUI frontend
+frontend/terminal/node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+uv.lock
