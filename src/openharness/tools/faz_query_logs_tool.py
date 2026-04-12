@@ -63,12 +63,11 @@ class FAZQueryLogsInput(BaseModel):
         ),
     )
     limit: int = Field(
-        default=50, ge=1, le=50,
+        default=100, ge=1, le=100,
         description=(
-            "Maximum log entries to return. HARD CAP of 50 — even noisy scanners "
-            "produce too many entries in a 10-minute window for the model to reason "
-            "over reliably. The 50-entry sample is enough to spot patterns; the "
-            "tool's SUMMARY section already shows total counts and aggregated stats."
+            "Maximum sample log entries to show in the output. The tool internally "
+            "fetches up to 500 entries for aggregation stats (top IPs, ports, actions) "
+            "but only displays this many in the SAMPLE ENTRIES section."
         ),
     )
     log_type: str = Field(
@@ -163,6 +162,11 @@ class FAZQueryLogsTool(BaseTool):
         if arguments.ip_address:
             filter_expr = f"srcip=={arguments.ip_address} or dstip=={arguments.ip_address}"
 
+        # Fetch up to 500 entries for aggregation stats (top IPs, ports, actions).
+        # The model-facing `limit` only controls how many sample entries are shown
+        # in the output — the aggregation always covers the larger fetch.
+        _INTERNAL_FETCH_LIMIT = 500
+
         try:
             result = await faz_log_search(
                 config,
@@ -171,7 +175,7 @@ class FAZQueryLogsTool(BaseTool):
                 logtype=arguments.log_type,
                 time_range=time_range,
                 filter_expr=filter_expr,
-                limit=arguments.limit,
+                limit=_INTERNAL_FETCH_LIMIT,
             )
         except RuntimeError as exc:
             return ToolResult(output=f"FortiAnalyzer error: {exc}", is_error=True)
@@ -230,19 +234,15 @@ class FAZQueryLogsTool(BaseTool):
         top_apps = sorted(apps.items(), key=lambda x: -x[1])[:5]
 
         # SUMMARY FIRST so the model sees the most actionable info immediately.
-        # IMPORTANT honesty rule: total_entries_in_window is what FAZ counted in the
-        # window; analyzed_entries is what we actually pulled and aggregated. The
-        # aggregation stats below (top_*, actions, bytes_*) are computed over
-        # analyzed_entries, NOT total_entries_in_window. The model needs to know
-        # the difference.
-        truncated = total_count > len(entries)
+        # Aggregation stats are computed over ALL fetched entries (up to 500),
+        # which is a much more representative sample than the entries shown to
+        # the model. The SUMMARY header makes the coverage explicit.
+        sampled = total_count > len(entries)
         lines = [
             f"FortiAnalyzer {arguments.log_type} logs in ADOM '{arguments.adom}' for {scope} on {arguments.device}",
             f"window: {window} ({arguments.time_range})",
             "",
-            "=== SUMMARY ===",
-            f"total_entries_in_window: {total_count}",
-            f"analyzed_entries: {len(entries)}{' (TRUNCATED — see note below)' if truncated else ''}",
+            f"=== SUMMARY (aggregated over {len(entries)} of {total_count} entries) ===",
             f"unique_src_ips: {len(src_ips)}  unique_dst_ips: {len(dst_ips)}  unique_dst_ports: {len(dst_ports)}",
             f"bytes_sent: {total_sent:,}  bytes_received: {total_received:,}",
             f"actions: {actions}",
@@ -252,24 +252,23 @@ class FAZQueryLogsTool(BaseTool):
         ]
         if top_apps:
             lines.append(f"top_apps: {[f'{a}({c})' for a,c in top_apps]}")
-        if truncated:
+        if sampled:
             lines.extend([
                 "",
-                f"NOTE: Only {len(entries)} of {total_count} entries were fetched (limit cap). "
-                f"The aggregation stats above (top_*, actions, bytes_*) reflect those "
-                f"{len(entries)} entries only. If you need a representative analysis of the "
-                f"full window, use a narrower time_range or a more specific filter — do NOT "
-                f"claim to have analyzed all {total_count} entries when you wrote the closure notes.",
+                f"NOTE: Stats above are based on {len(entries)} of {total_count} "
+                f"entries (sampled). They are representative but not exhaustive. "
+                f"In your closure notes, write 'sampled {len(entries)} of "
+                f"{total_count} entries' — do NOT claim to have analyzed all "
+                f"{total_count}.",
             ])
 
-        # Sample of raw entries — capped to keep output digestible for smaller models.
-        # The summary above already conveys the volumetric picture; the raw entries
-        # are just for the model to spot a specific anomaly if needed.
-        sample_n = min(len(entries), 10)
+        # Sample entries — show up to the model-requested limit for the LLM to
+        # inspect individual log lines and spot anomalies.
+        sample_n = min(len(entries), arguments.limit)
         if sample_n > 0:
             lines.extend([
                 "",
-                f"=== SAMPLE ENTRIES (first {sample_n} of {len(entries)}) ===",
+                f"=== SAMPLE ENTRIES (first {sample_n} of {len(entries)} fetched) ===",
             ])
             for entry in entries[:sample_n]:
                 ts = entry.get("itime", f"{entry.get('date', '')} {entry.get('time', '')}")
@@ -288,7 +287,7 @@ class FAZQueryLogsTool(BaseTool):
                 )
             if len(entries) > sample_n:
                 lines.append(
-                    f"  ... ({len(entries) - sample_n} more entries — use the SUMMARY above for the volumetric picture)"
+                    f"  ... ({len(entries) - sample_n} more fetched — see SUMMARY above for aggregated stats)"
                 )
 
         return ToolResult(output="\n".join(lines))

@@ -28,6 +28,7 @@ Your `closure_notes` MUST contain:
 - What you queried (the 4 tool calls you made, the time windows)
 - What you found (specific numbers -- `0 events`, `0 traffic logs`, source IP, action, etc.)
 - Why you concluded it's safe to close
+- **When a query shows `analyzed_entries` < `total_entries_in_window`, write "sampled N of M entries" -- you only analyzed a sample, not the full window. Do NOT write "M entries found, no malicious patterns."**
 
 **Bad (will be rejected):** `"Looks benign"`, `"No issue found"`, `"Closing as resolved"`
 

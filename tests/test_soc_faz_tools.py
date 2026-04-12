@@ -289,9 +289,7 @@ class TestFAZQueryLogsTool:
         assert not result.is_error
         assert "10.0.0.1" in result.output
         assert "8.8.8.8" in result.output
-        assert "SUMMARY" in result.output
-        assert "total_entries_in_window: 2" in result.output
-        assert "analyzed_entries: 2" in result.output
+        assert "SUMMARY (aggregated over 2 of 2 entries)" in result.output
 
     @pytest.mark.asyncio
     @patch.dict("os.environ", FAZ_ENV, clear=False)
