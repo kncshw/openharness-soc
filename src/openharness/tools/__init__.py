@@ -47,6 +47,7 @@ from openharness.tools.fortisoar_get_alert_tool import FortiSOARGetAlertTool
 from openharness.tools.fortisoar_list_alerts_tool import FortiSOARListAlertsTool
 from openharness.tools.fortisoar_escalate_alert_tool import FortiSOAREscalateAlertTool
 from openharness.tools.fortisoar_resolve_alert_tool import FortiSOARResolveAlertTool
+from openharness.tools.netbox_lookup_ip_tool import NetboxLookupIPTool
 from openharness.tools.web_fetch_tool import WebFetchTool
 from openharness.tools.web_search_tool import WebSearchTool
 
@@ -100,6 +101,7 @@ def create_default_tool_registry(mcp_manager=None) -> ToolRegistry:
         FortiSOARGetAlertTool(),
         FortiSOARResolveAlertTool(),
         FortiSOAREscalateAlertTool(),
+        NetboxLookupIPTool(),
     ):
         registry.register(tool)
     if mcp_manager is not None:

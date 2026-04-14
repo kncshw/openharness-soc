@@ -1,645 +1,249 @@
-<h1 align="center"><img src="assets/logo.png" alt="OpenHarness" width="64" style="vertical-align: middle;">&nbsp; <code>oh</code> — OpenHarness: Open Agent Harness</h1>
+# OpenHarness SOC — AI-Powered Security Alert Triage
 
-**OpenHarness** delivers core lightweight agent infrastructure: tool-use, skills, memory, and multi-agent coordination.
-
-**Join the community**: contribute **Harness** for open agent development.
-
-<p align="center">
-  <a href="#-quick-start"><img src="https://img.shields.io/badge/Quick_Start-5_min-blue?style=for-the-badge" alt="Quick Start"></a>
-  <a href="#-harness-architecture"><img src="https://img.shields.io/badge/Harness-Architecture-ff69b4?style=for-the-badge" alt="Architecture"></a>
-  <a href="#-features"><img src="https://img.shields.io/badge/Tools-43+-green?style=for-the-badge" alt="Tools"></a>
-  <a href="#-test-results"><img src="https://img.shields.io/badge/Tests-114_Passing-brightgreen?style=for-the-badge" alt="Tests"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License"></a>
-</p>
+An AI SOC analyst that automatically triages FortiSOAR security alerts by correlating evidence from FortiAnalyzer and FortiSIEM, then resolving or escalating each alert — powered by a locally-hosted LLM (Gemma4-26B) harnessed through structured tool calling.
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-≥3.10-blue?logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/React+Ink-TUI-61DAFB?logo=react&logoColor=white" alt="React">
-  <img src="https://img.shields.io/badge/pytest-114_pass-brightgreen" alt="Pytest">
-  <img src="https://img.shields.io/badge/E2E-6_suites-orange" alt="E2E">
-  <img src="https://img.shields.io/badge/output-text_|_json_|_stream--json-blueviolet" alt="Output">
-  <a href="https://github.com/HKUDS/OpenHarness/actions/workflows/ci.yml"><img src="https://github.com/HKUDS/OpenHarness/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/HKUDS/.github/blob/main/profile/README.md"><img src="https://img.shields.io/badge/Feishu-Group-E9DBFC?style=flat&logo=feishu&logoColor=white" alt="Feishu"></a>
-  <a href="https://github.com/HKUDS/.github/blob/main/profile/README.md"><img src="https://img.shields.io/badge/WeChat-Group-C5EAB4?style=flat&logo=wechat&logoColor=white" alt="WeChat"></a>
+  <img src="https://img.shields.io/badge/LLM-Gemma4--26B-orange" alt="Gemma4">
+  <img src="https://img.shields.io/badge/tests-106_passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/alerts_triaged-37+-green" alt="Alerts">
+  <img src="https://img.shields.io/badge/license-MIT-yellow" alt="License">
 </p>
 
-One Command (**oh**) to Launch **OpenHarness** and Unlock All Agent Harnesses. 
+## How It Works
 
-Supports CLI agent integration including OpenClaw, nanobot, Cursor, and more.
-
-<p align="center">
-  <img src="assets/cli-typing.gif" alt="OpenHarness Terminal Demo" width="800">
-</p>
-
-<p align="center">
-  <img src="assets/architecture-comic.png" alt="How Agent Harness Works" width="800">
-</p>
-
----
-## ✨ OpenHarness's Key Harness Features
-
-<table align="center" width="100%">
-<tr>
-<td width="20%" align="center" style="vertical-align: top; padding: 15px;">
-
-<h3>🔄 Agent Loop</h3>
-
-<div align="center">
-  <img src="https://img.shields.io/badge/Engine-06B6D4?style=for-the-badge&logo=lightning&logoColor=white" alt="Engine" />
-</div>
-
-<img src="assets/scene-agentloop.png" width="140">
-
-<p align="center"><strong>• Streaming Tool-Call Cycle</strong></p>
-<p align="center"><strong>• API Retry with Exponential Backoff</strong></p>
-<p align="center"><strong>• Parallel Tool Execution</strong></p>
-<p align="center"><strong>• Token Counting & Cost Tracking</strong></p>
-
-</td>
-<td width="20%" align="center" style="vertical-align: top; padding: 15px;">
-
-<h3>🔧 Harness Toolkit</h3>
-
-<div align="center">
-  <img src="https://img.shields.io/badge/43+_Tools-10B981?style=for-the-badge&logo=toolbox&logoColor=white" alt="Toolkit" />
-</div>
-
-<img src="assets/scene-toolkit.png" width="140">
-
-<p align="center"><strong>• 43 Tools (File, Shell, Search, Web, MCP)</strong></p>
-<p align="center"><strong>• On-Demand Skill Loading (.md)</strong></p>
-<p align="center"><strong>• Plugin Ecosystem (Skills + Hooks + Agents)</strong></p>
-<p align="center"><strong>• Compatible with anthropics/skills & plugins</strong></p>
-
-</td>
-<td width="20%" align="center" style="vertical-align: top; padding: 15px;">
-
-<h3>🧠 Context & Memory</h3>
-
-<div align="center">
-  <img src="https://img.shields.io/badge/Persistent-8B5CF6?style=for-the-badge&logo=brain&logoColor=white" alt="Context" />
-</div>
-
-<img src="assets/scene-context.png" width="140">
-
-<p align="center"><strong>• CLAUDE.md Discovery & Injection</strong></p>
-<p align="center"><strong>• Context Compression (Auto-Compact)</strong></p>
-<p align="center"><strong>• MEMORY.md Persistent Memory</strong></p>
-<p align="center"><strong>• Session Resume & History</strong></p>
-
-</td>
-<td width="20%" align="center" style="vertical-align: top; padding: 15px;">
-
-<h3>🛡️ Governance</h3>
-
-<div align="center">
-  <img src="https://img.shields.io/badge/Permissions-F59E0B?style=for-the-badge&logo=shield&logoColor=white" alt="Governance" />
-</div>
-
-<img src="assets/scene-governance.png" width="140">
-
-<p align="center"><strong>• Multi-Level Permission Modes</strong></p>
-<p align="center"><strong>• Path-Level & Command Rules</strong></p>
-<p align="center"><strong>• PreToolUse / PostToolUse Hooks</strong></p>
-<p align="center"><strong>• Interactive Approval Dialogs</strong></p>
-
-</td>
-<td width="20%" align="center" style="vertical-align: top; padding: 15px;">
-
-<h3>🤝 Swarm Coordination</h3>
-
-<div align="center">
-  <img src="https://img.shields.io/badge/Multi--Agent-EC4899?style=for-the-badge&logo=network&logoColor=white" alt="Swarm" />
-</div>
-
-<img src="assets/scene-swarm.png" width="140">
-
-<p align="center"><strong>• Subagent Spawning & Delegation</strong></p>
-<p align="center"><strong>• Team Registry & Task Management</strong></p>
-<p align="center"><strong>• Background Task Lifecycle</strong></p>
-<p align="center"><strong>• <a href="https://github.com/HKUDS/ClawTeam">ClawTeam</a> Integration (Roadmap)</strong></p>
-
-</td>
-</tr>
-</table>
-
----
-
-## 🤔 What is an Agent Harness?
-
-An **Agent Harness** is the complete infrastructure that wraps around an LLM to make it a functional agent. The model provides intelligence; the harness provides **hands, eyes, memory, and safety boundaries**.
-
-<p align="center">
-  <img src="assets/harness-equation.png" alt="Harness = Tools + Knowledge + Observation + Action + Permissions" width="700">
-</p>
-
-OpenHarness is an open-source Python implementation designed for **researchers, builders, and the community**:
-
-- **Understand** how production AI agents work under the hood
-- **Experiment** with cutting-edge tools, skills, and agent coordination patterns
-- **Extend** the harness with custom plugins, providers, and domain knowledge
-- **Build** specialized agents on top of proven architecture
-
----
-
-## 📰 What's New
-
-- **2026-04-01** 🎨 **v0.1.0** — Initial **OpenHarness** open-source release featuring complete Harness architecture: 
-
-<p align="center">
-  <strong>Start here:</strong>
-  <a href="#-quick-start">Quick Start</a> ·
-  <a href="#-provider-compatibility">Provider Compatibility</a> ·
-  <a href="docs/SHOWCASE.md">Showcase</a> ·
-  <a href="CONTRIBUTING.md">Contributing</a> ·
-  <a href="CHANGELOG.md">Changelog</a>
-</p>
-
----
-
-## 🚀 Quick Start
-
-### One-Click Install
-
-The fastest way to get started — a single command handles OS detection, dependency checks, and installation:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/HKUDS/OpenHarness/main/scripts/install.sh | bash
+```
+┌─────────────────────────────────────────────────────────────┐
+│  bis-soc CLI                                                │
+│  One alert per conversation — no constraint drift           │
+└─────────────┬───────────────────────────────────────────────┘
+              │
+┌─────────────▼───────────────────────────────────────────────┐
+│  OpenHarness Framework                                      │
+│  Tool registry (7 SOC tools) · Permission checker           │
+│  JSON tool-call loop · Session logger                       │
+│  ─── The harness: JSON in, JSON out, deterministic ───      │
+└─────────────┬───────────────────────────────────────────────┘
+              │ structured JSON tool calls
+┌─────────────▼───────────────────────────────────────────────┐
+│  Gemma4-26B-A4B via vLLM                                    │
+│  Picks tools · Fills args · Writes closure notes            │
+│  Temperature 0.2 · Local inference · Zero API cost          │
+└─────────────┬───────────────────────────────────────────────┘
+              │ validated arguments
+┌─────────────▼───────────────────────────────────────────────┐
+│  SOC Tool Layer — Intelligence Lives Here                   │
+│                                                             │
+│  FortiSOAR          FortiAnalyzer      Other                │
+│  ├─ list_alerts     ├─ query_logs      ├─ whitelist engine  │
+│  ├─ get_alert       └─ query_security  ├─ netbox_lookup_ip  │
+│  ├─ resolve_alert      _events         └─ (FortiSIEM next)  │
+│  └─ escalate_alert                                          │
+│                                                             │
+│  IP labels · CIDR matching · Log aggregation · Audit trails │
+└─────────────┬───────────────────────────────────────────────┘
+              │
+┌─────────────▼───────────────────────────────────────────────┐
+│  External Systems                                           │
+│  FortiSOAR (HMAC) · FortiAnalyzer (JSON-RPC) · Netbox      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**Options:**
+## Core Design Principle
 
-| Flag | Description |
-|------|-------------|
-| `--from-source` | Clone from GitHub and install in editable mode (`pip install -e .`) |
-| `--with-channels` | Also install IM channel dependencies (`slack-sdk`, `python-telegram-bot`, `discord.py`) |
+**Intelligence lives in the tool layer, not in the model.**
 
-```bash
-# Install from source (for contributors / latest code)
-curl -fsSL https://raw.githubusercontent.com/HKUDS/OpenHarness/main/scripts/install.sh | bash -s -- --from-source
+The LLM's job is small and well-scoped: pick a tool, fill in JSON arguments, summarize results in natural language. Everything else — HMAC authentication, CIDR classification, log aggregation, whitelist matching, audit trail generation — runs in deterministic Python code. This makes the system reliable with a small, locally-hosted model that would otherwise struggle with these tasks.
 
-# Install with IM channel support
-curl -fsSL https://raw.githubusercontent.com/HKUDS/OpenHarness/main/scripts/install.sh | bash -s -- --with-channels
+## Features
 
-# Or run locally after cloning
-bash scripts/install.sh --from-source --with-channels
-```
+### Alert Triage
+- **Automated batch processing** — `bis-soc` drains all open Critical/High alerts, one per fresh LLM conversation
+- **Single alert mode** — `bis-soc Alert-NNN` for targeted investigation
+- **4-query correlation workflow** — security events, source IP traffic (before/after), destination IP traffic
+- **Evidence-based closure** — closure notes include specific numbers, log citations, and sampled-vs-total counts
 
-The script will:
-1. Detect your OS (Linux / macOS / WSL)
-2. Verify Python ≥ 3.10 and Node.js ≥ 18
-3. Install OpenHarness via `pip`
-4. Set up the React TUI (`npm install`) if Node.js is available
-5. Create `~/.openharness/` config directory
-6. Confirm with `oh --version`
+### Whitelist Auto-Close
+- **Human-curated YAML** — IP and CIDR entries with justification, author, date
+- **Bypasses LLM entirely** — code closes the alert, returns a data-starved stop message
+- **Git SHA audit trail** — every closure cites the exact whitelist file version
+- **CIDR matching** — Python `ipaddress` module, not LLM pattern matching
+
+### Escalation
+- **Status transition** — Open → Investigating, removes alert from automated queue
+- **Inbound-accept detection** — tool-output warning when external source → internal destination with action=accept
+- **IP classification** — every IP labeled (INTERNAL) or (EXTERNAL) by code, not by the LLM
+- **SMTP/Teams notification** — planned, pending network access
+
+### Safety Guardrails
+- **Tenant + source scoping** — fail-closed, refuses to process alerts outside configured scope
+- **Closure reason allowlist** — off-list picks silently substituted with safe default
+- **BIS-AI marker** — `[Triaged by BIS-AI Analyst — Gemma4-26B-A4B]` on every closure
+- **Tool filtering** — 44 framework tools → 7 SOC tools, reducing token waste and model confusion
+- **One alert per conversation** — prevents constraint drift and context exhaustion
+
+### Observability
+- **Full session logging** — every tool call, result, and the complete tool definition array
+- **[LOG] citation enforcement** — tool-output reminders force the LLM to cite specific log entries
+- **"Sampled N of M" language** — honest reporting when analysis covers a sample, not the full window
+
+## Quick Start
 
 ### Prerequisites
+- Python ≥ 3.10
+- A vLLM server hosting Gemma4-26B-A4B (or any OpenAI-compatible endpoint)
+- FortiSOAR access (HMAC key files)
+- FortiAnalyzer access (API user credentials)
 
-- **Python 3.10+** and [uv](https://docs.astral.sh/uv/)
-- **Node.js 18+** (optional, for the React terminal UI)
-- An LLM API key
-
-### One-Command Demo
-
-```bash
-ANTHROPIC_API_KEY=your_key uv run oh -p "Inspect this repository and list the top 3 refactors"
-```
-
-### Install & Run
+### Installation
 
 ```bash
-# Clone and install
-git clone https://github.com/HKUDS/OpenHarness.git
-cd OpenHarness
-uv sync --extra dev
-
-# Example: use Kimi as the backend
-export ANTHROPIC_BASE_URL=https://api.moonshot.cn/anthropic
-export ANTHROPIC_API_KEY=your_kimi_api_key
-export ANTHROPIC_MODEL=kimi-k2.5
-
-# Launch
-oh                    # if venv is activated
-uv run oh             # without activating venv
+git clone https://github.com/kncshw/openharness-soc.git
+cd openharness-soc
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
 
-<p align="center">
-  <img src="assets/landing.png" alt="OpenHarness Landing Screen" width="700">
-</p>
-
-### Non-Interactive Mode (Pipes & Scripts)
+### Configuration
 
 ```bash
-# Single prompt → stdout
-oh -p "Explain this codebase"
-
-# JSON output for programmatic use
-oh -p "List all functions in main.py" --output-format json
-
-# Stream JSON events in real-time
-oh -p "Fix the bug" --output-format stream-json
+cp .env.example .env
+# Edit .env with your credentials:
+#   FortiSOAR: URL, key files, tenant, source
+#   FortiAnalyzer: host, user, password, ADOMs
+#   LLM: vLLM endpoint URL, model name
+#   Optional: Netbox URL + token, whitelist file path
 ```
 
-## 🔌 Provider Compatibility
-
-OpenHarness supports three API formats: **Anthropic** (default), **OpenAI-compatible** (`--api-format openai`), and **GitHub Copilot** (`--api-format copilot`). The OpenAI format covers a wide range of providers.
-
-### Anthropic Format (default)
-
-| Provider profile | Detection signal | Notes |
-|------------------|------------------|-------|
-| **Anthropic** | Default when no custom `ANTHROPIC_BASE_URL` is set | Default Claude-oriented setup |
-| **Moonshot / Kimi** | `ANTHROPIC_BASE_URL` contains `moonshot` or model starts with `kimi` | Anthropic-compatible endpoint |
-| **Vertex-compatible** | Base URL contains `vertex` or `aiplatform` | Anthropic-style gateways on Vertex |
-| **Bedrock-compatible** | Base URL contains `bedrock` | Bedrock-style deployments |
-| **Generic Anthropic-compatible** | Any other explicit `ANTHROPIC_BASE_URL` | Proxies and internal gateways |
-
-### OpenAI Format (`--api-format openai`)
-
-Any provider implementing the OpenAI `/v1/chat/completions` API works out of the box:
-
-| Provider | Base URL | Example models |
-|----------|----------|----------------|
-| **Alibaba DashScope** | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen3.5-flash`, `qwen3-max`, `deepseek-r1` |
-| **DeepSeek** | `https://api.deepseek.com` | `deepseek-chat`, `deepseek-reasoner` |
-| **OpenAI** | `https://api.openai.com/v1` | `gpt-4o`, `gpt-4o-mini` |
-| **GitHub Models** | `https://models.inference.ai.azure.com` | `gpt-4o`, `Meta-Llama-3.1-405B-Instruct` |
-| **SiliconFlow** | `https://api.siliconflow.cn/v1` | `deepseek-ai/DeepSeek-V3` |
-| **Groq** | `https://api.groq.com/openai/v1` | `llama-3.3-70b-versatile` |
-| **Ollama (local)** | `http://localhost:11434/v1` | Any local model |
+### Run
 
 ```bash
-# Example: use DashScope
-uv run oh --api-format openai \
-  --base-url "https://dashscope.aliyuncs.com/compatible-mode/v1" \
-  --api-key "sk-xxx" \
-  --model "qwen3.5-flash"
+# Process one alert
+bin/bis-soc Alert-109331
 
-# Or via environment variables
-export OPENHARNESS_API_FORMAT=openai
-export OPENAI_API_KEY=sk-xxx
-export OPENHARNESS_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-export OPENHARNESS_MODEL=qwen3.5-flash
-uv run oh
+# Drain all open Critical/High alerts
+bin/bis-soc
 ```
 
-### GitHub Copilot Format (`--api-format copilot`)
+### Whitelist
 
-Use your existing GitHub Copilot subscription as the LLM backend. Authentication uses GitHub's OAuth device flow — no API keys needed.
+Edit `config/soc_whitelist.yaml` to add known-benign IPs:
+
+```yaml
+- ip: 10.125.19.31
+  reason: "FortiRecon internal threat-intel collector"
+  added_by: kaini
+  added_on: 2026-04-08
+  closure_reason: Risk Accept
+
+- cidr: 10.125.19.0/24
+  reason: "Threat-intel collector subnet"
+  added_by: kaini
+  added_on: 2026-04-08
+  closure_reason: Risk Accept
+```
+
+### Docker (optional)
 
 ```bash
-# One-time login (opens browser for GitHub authorization)
-oh auth copilot-login
-
-# Then launch with Copilot as the provider
-uv run oh --api-format copilot
-
-# Or via environment variable
-export OPENHARNESS_API_FORMAT=copilot
-uv run oh
-
-# Check auth status
-oh auth status
-
-# Remove stored credentials
-oh auth copilot-logout
+docker build -f Dockerfile.soc -t bis-soc:latest .
+docker compose -f docker-compose.soc.yml run --rm soc-agent           # drain all
+docker compose -f docker-compose.soc.yml run --rm soc-agent Alert-NNN # single
 ```
 
-| Feature | Details |
-|---------|---------|
-| **Auth method** | GitHub OAuth device flow (no API key needed) |
-| **Token management** | Automatic refresh of short-lived session tokens |
-| **Enterprise** | Supports GitHub Enterprise via `--github-domain` flag |
-| **Models** | Uses Copilot's default model selection |
-| **API** | OpenAI-compatible chat completions under the hood |
-
----
-
-## 🏗️ Harness Architecture
-
-OpenHarness implements the core Agent Harness pattern with 10 subsystems:
+## Project Structure
 
 ```
-openharness/
-  engine/          # 🧠 Agent Loop — query → stream → tool-call → loop
-  tools/           # 🔧 43 Tools — file I/O, shell, search, web, MCP
-  skills/          # 📚 Knowledge — on-demand skill loading (.md files)
-  plugins/         # 🔌 Extensions — commands, hooks, agents, MCP servers
-  permissions/     # 🛡️ Safety — multi-level modes, path rules, command deny
-  hooks/           # ⚡ Lifecycle — PreToolUse/PostToolUse event hooks
-  commands/        # 💬 54 Commands — /help, /commit, /plan, /resume, ...
-  mcp/             # 🌐 MCP — Model Context Protocol client
-  memory/          # 🧠 Memory — persistent cross-session knowledge
-  tasks/           # 📋 Tasks — background task management
-  coordinator/     # 🤝 Multi-Agent — subagent spawning, team coordination
-  prompts/         # 📝 Context — system prompt assembly, CLAUDE.md, skills
-  config/          # ⚙️ Settings — multi-layer config, migrations
-  ui/              # 🖥️ React TUI — backend protocol + frontend
+bin/
+  bis-soc                     # Batch wrapper (single + drain mode)
+  oh-pretty.py                # Stream-JSON pretty printer
+config/
+  soc_whitelist.yaml          # Human-curated IP/CIDR whitelist
+docs/
+  soc-analyst-prompt-min.md   # System prompt (batch mode)
+  soc-system-design.md        # Full architecture document
+  soc-escalation-design.md    # SMTP/Teams escalation design
+  soc-netbox-integration-plan.md
+  soc-harness-architecture.md # Mermaid diagrams
+src/openharness/
+  tools/
+    _fortisoar_helpers.py     # FortiSOAR HMAC auth + REST client
+    _faz_helpers.py           # FAZ JSON-RPC + async log search
+    _whitelist.py             # Whitelist schema, loader, auto-close
+    _netbox_helpers.py        # Netbox pynetbox wrapper
+    fortisoar_list_alerts_tool.py
+    fortisoar_get_alert_tool.py
+    fortisoar_resolve_alert_tool.py
+    fortisoar_escalate_alert_tool.py
+    faz_query_logs_tool.py
+    faz_query_security_events_tool.py
+    netbox_lookup_ip_tool.py
+  soc_auto_close.py           # Standalone auto-close CLI
+  soc_list_open_alerts.py     # Alert ID lister for drain mode
+tests/
+  test_soc_fortisoar_tools.py # FortiSOAR tool tests
+  test_soc_faz_tools.py       # FAZ tool tests
+  test_soc_whitelist.py       # Whitelist + auto-close tests
+  test_soc_list_open_alerts.py
 ```
 
-### The Agent Loop
-
-The heart of the harness. One loop, endlessly composable:
-
-```python
-while True:
-    response = await api.stream(messages, tools)
-    
-    if response.stop_reason != "tool_use":
-        break  # Model is done
-    
-    for tool_call in response.tool_uses:
-        # Permission check → Hook → Execute → Hook → Result
-        result = await harness.execute_tool(tool_call)
-    
-    messages.append(tool_results)
-    # Loop continues — model sees results, decides next action
-```
-
-The model decides **what** to do. The harness handles **how** — safely, efficiently, with full observability.
-
-### Harness Flow
-
-```mermaid
-flowchart LR
-    U[User Prompt] --> C[CLI or React TUI]
-    C --> R[RuntimeBundle]
-    R --> Q[QueryEngine]
-    Q --> A[Anthropic-compatible API Client]
-    A -->|tool_use| T[Tool Registry]
-    T --> P[Permissions + Hooks]
-    P --> X[Files Shell Web MCP Tasks]
-    X --> Q
-```
-
----
-
-## ✨ Features
-
-### 🔧 Tools (43+)
-
-| Category | Tools | Description |
-|----------|-------|-------------|
-| **File I/O** | Bash, Read, Write, Edit, Glob, Grep | Core file operations with permission checks |
-| **Search** | WebFetch, WebSearch, ToolSearch, LSP | Web and code search capabilities |
-| **Notebook** | NotebookEdit | Jupyter notebook cell editing |
-| **Agent** | Agent, SendMessage, TeamCreate/Delete | Subagent spawning and coordination |
-| **Task** | TaskCreate/Get/List/Update/Stop/Output | Background task management |
-| **MCP** | MCPTool, ListMcpResources, ReadMcpResource | Model Context Protocol integration |
-| **Mode** | EnterPlanMode, ExitPlanMode, Worktree | Workflow mode switching |
-| **Schedule** | CronCreate/List/Delete, RemoteTrigger | Scheduled and remote execution |
-| **Meta** | Skill, Config, Brief, Sleep, AskUser | Knowledge loading, configuration, interaction |
-
-Every tool has:
-- **Pydantic input validation** — structured, type-safe inputs
-- **Self-describing JSON Schema** — models understand tools automatically
-- **Permission integration** — checked before every execution
-- **Hook support** — PreToolUse/PostToolUse lifecycle events
-
-### 📚 Skills System
-
-Skills are **on-demand knowledge** — loaded only when the model needs them:
-
-```
-Available Skills:
-- commit: Create clean, well-structured git commits
-- review: Review code for bugs, security issues, and quality
-- debug: Diagnose and fix bugs systematically
-- plan: Design an implementation plan before coding
-- test: Write and run tests for code
-- simplify: Refactor code to be simpler and more maintainable
-- pdf: PDF processing with pypdf (from anthropics/skills)
-- xlsx: Excel operations (from anthropics/skills)
-- ... 40+ more
-```
-
-**Compatible with [anthropics/skills](https://github.com/anthropics/skills)** — just copy `.md` files to `~/.openharness/skills/`.
-
-### 🔌 Plugin System
-
-**Compatible with [claude-code plugins](https://github.com/anthropics/claude-code/tree/main/plugins)**. Tested with 12 official plugins:
-
-| Plugin | Type | What it does |
-|--------|------|-------------|
-| `commit-commands` | Commands | Git commit, push, PR workflows |
-| `security-guidance` | Hooks | Security warnings on file edits |
-| `hookify` | Commands + Agents | Create custom behavior hooks |
-| `feature-dev` | Commands | Feature development workflow |
-| `code-review` | Agents | Multi-agent PR review |
-| `pr-review-toolkit` | Agents | Specialized PR review agents |
-
-```bash
-# Manage plugins
-oh plugin list
-oh plugin install <source>
-oh plugin enable <name>
-```
-
-### 🤝 Ecosystem Workflows
-
-OpenHarness is useful as a lightweight harness layer around Claude-style tooling conventions:
-
-- **OpenClaw-oriented workflows** can reuse Markdown-first knowledge and command-driven collaboration patterns.
-- **Claude-style plugins and skills** stay portable because OpenHarness keeps those formats familiar.
-- **ClawTeam-style multi-agent work** maps well onto the built-in team, task, and background execution primitives.
-
-For concrete usage ideas instead of generic claims, see [`docs/SHOWCASE.md`](docs/SHOWCASE.md).
-
-### 🛡️ Permissions
-
-Multi-level safety with fine-grained control:
-
-| Mode | Behavior | Use Case |
-|------|----------|----------|
-| **Default** | Ask before write/execute | Daily development |
-| **Auto** | Allow everything | Sandboxed environments |
-| **Plan Mode** | Block all writes | Large refactors, review first |
-
-**Path-level rules** in `settings.json`:
-```json
-{
-  "permission": {
-    "mode": "default",
-    "path_rules": [{"pattern": "/etc/*", "allow": false}],
-    "denied_commands": ["rm -rf /", "DROP TABLE *"]
-  }
-}
-```
-
-### 🖥️ Terminal UI
-
-React/Ink TUI with full interactive experience:
-
-- **Command picker**: Type `/` → arrow keys to select → Enter
-- **Permission dialog**: Interactive y/n with tool details
-- **Mode switcher**: `/permissions` → select from list
-- **Session resume**: `/resume` → pick from history
-- **Animated spinner**: Real-time feedback during tool execution
-- **Keyboard shortcuts**: Shown at the bottom, context-aware
-
-### 📡 CLI
-
-```
-oh [OPTIONS] COMMAND [ARGS]
-
-Session:     -c/--continue, -r/--resume, -n/--name
-Model:       -m/--model, --effort, --max-turns
-Output:      -p/--print, --output-format text|json|stream-json
-Permissions: --permission-mode, --dangerously-skip-permissions
-Context:     -s/--system-prompt, --append-system-prompt, --settings
-Advanced:    -d/--debug, --mcp-config, --bare
-
-Subcommands: oh mcp | oh plugin | oh auth
-```
-
----
-
-## 📊 Test Results
-
-| Suite | Tests | Status |
-|-------|-------|--------|
-| Unit + Integration | 114 | ✅ All passing |
-| CLI Flags E2E | 6 | ✅ Real model calls |
-| Harness Features E2E | 9 | ✅ Retry, skills, parallel, permissions |
-| React TUI E2E | 3 | ✅ Welcome, conversation, status |
-| TUI Interactions E2E | 4 | ✅ Commands, permissions, shortcuts |
-| Real Skills + Plugins | 12 | ✅ anthropics/skills + claude-code/plugins |
-
-```bash
-# Run all tests
-uv run pytest -q                           # 114 unit/integration
-python scripts/test_harness_features.py     # Harness E2E
-python scripts/test_real_skills_plugins.py  # Real plugins E2E
-```
-
----
-
-## 🔧 Extending OpenHarness
-
-### Add a Custom Tool
-
-```python
-from pydantic import BaseModel, Field
-from openharness.tools.base import BaseTool, ToolExecutionContext, ToolResult
-
-class MyToolInput(BaseModel):
-    query: str = Field(description="Search query")
-
-class MyTool(BaseTool):
-    name = "my_tool"
-    description = "Does something useful"
-    input_model = MyToolInput
-
-    async def execute(self, arguments: MyToolInput, context: ToolExecutionContext) -> ToolResult:
-        return ToolResult(output=f"Result for: {arguments.query}")
-```
-
-### Add a Custom Skill
-
-Create `~/.openharness/skills/my-skill.md`:
-
-```markdown
----
-name: my-skill
-description: Expert guidance for my specific domain
----
-
-# My Skill
-
-## When to use
-Use when the user asks about [your domain].
-
-## Workflow
-1. Step one
-2. Step two
-...
-```
-
-### Add a Plugin
-
-Create `.openharness/plugins/my-plugin/.claude-plugin/plugin.json`:
-
-```json
-{
-  "name": "my-plugin",
-  "version": "1.0.0",
-  "description": "My custom plugin"
-}
-```
-
-Add commands in `commands/*.md`, hooks in `hooks/hooks.json`, agents in `agents/*.md`.
-
----
-
-## 🌍 Showcase
-
-OpenHarness is most useful when treated as a small, inspectable harness you can adapt to a real workflow:
-
-- **Repo coding assistant** for reading code, patching files, and running checks locally.
-- **Headless scripting tool** for `json` and `stream-json` output in automation flows.
-- **Plugin and skill testbed** for experimenting with Claude-style extensions.
-- **Multi-agent prototype harness** for task delegation and background execution.
-- **Provider comparison sandbox** across Anthropic-compatible backends.
-
-See [`docs/SHOWCASE.md`](docs/SHOWCASE.md) for short, reproducible examples.
-
----
-
-## 🤝 Contributing
-
-OpenHarness is a **community-driven research project**. We welcome contributions in:
-
-| Area | Examples |
-|------|---------|
-| **Tools** | New tool implementations for specific domains |
-| **Skills** | Domain knowledge `.md` files (finance, science, DevOps...) |
-| **Plugins** | Workflow plugins with commands, hooks, agents |
-| **Providers** | Support for more LLM backends (OpenAI, Ollama, etc.) |
-| **Multi-Agent** | Coordination protocols, team patterns |
-| **Testing** | E2E scenarios, edge cases, benchmarks |
-| **Documentation** | Architecture guides, tutorials, translations |
-
-```bash
-# Development setup
-git clone https://github.com/HKUDS/OpenHarness.git
-cd OpenHarness
-uv sync --extra dev
-uv run pytest -q  # Verify everything works
-```
-
-Useful contributor entry points:
-
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup, checks, and PR expectations
-- [`CHANGELOG.md`](CHANGELOG.md) for user-visible changes
-- [`docs/SHOWCASE.md`](docs/SHOWCASE.md) for real-world usage patterns worth documenting
-
----
-
-## 📄 License
+## Integration Architecture
+
+**FortiSOAR** is the central orchestration platform. It aggregates security alerts from FortiAnalyzer and FortiSIEM into a unified ticket queue. The SOC agent processes this queue.
+
+**FortiAnalyzer** holds the forensic evidence — traffic logs, security events, application control logs from every FortiGate in the network. The agent queries FAZ to correlate alert evidence.
+
+**FortiSIEM** serves the same role as FortiAnalyzer for a different set of log sources. Alerts originating from FortiSIEM also flow into FortiSOAR. The agent dispatches to the correct log backend automatically based on alert origin. *(Integration in progress)*
+
+**Netbox** provides IP-to-owner mapping. When escalating, the agent looks up the involved IPs to identify the owning team, accelerating incident response.
+
+## Preliminary Results
+
+| Metric | Result |
+|--------|--------|
+| Alerts auto-triaged (batch) | 37+ |
+| Whitelist auto-close accuracy | 100% (0 false negatives) |
+| Avg time per alert (with FAZ correlation) | 30–60 seconds |
+| Avg time per alert (whitelist hit) | ~3 seconds |
+| Escalation on inbound-accepted traffic | Correctly triggered |
+| Duplicate detection | Working (skips redundant FAZ queries) |
+| False closure of action=accept alerts | Mitigated via tool-output warnings + IP labels |
+
+## Roadmap
+
+- [x] FortiSOAR integration (list, get, resolve, escalate)
+- [x] FortiAnalyzer integration (async log search, security events)
+- [x] IP/CIDR whitelist with auto-close
+- [x] Batch processing wrapper (bis-soc)
+- [x] Tool filtering (44 → 7)
+- [x] IP classification labels (INTERNAL/EXTERNAL)
+- [x] [LOG] citation enforcement
+- [x] BIS-AI triage marker
+- [x] Session logging with tool array
+- [x] Netbox IP ownership lookup
+- [x] Escalation tool (Open → Investigating)
+- [ ] FortiSIEM integration (mirrors FAZ pattern)
+- [ ] SMTP/Teams escalation notifications
+- [ ] Interactive TUI mode for analyst escalation cases
+- [ ] CMDB-driven asset context enrichment
+- [ ] Multi-vendor support (Palo Alto, Cisco)
+
+## Design Documents
+
+| Document | Description |
+|----------|-------------|
+| [System Design](docs/soc-system-design.md) | Full architecture, workflow, design principles, results |
+| [Escalation Design](docs/soc-escalation-design.md) | SMTP/Teams notification + status transition |
+| [Architecture Diagrams](docs/soc-harness-architecture.md) | Mermaid diagrams (system, flow, tools, stack) |
+| [Netbox Integration](docs/soc-netbox-integration-plan.md) | IP ownership lookup plan |
+| [CMDB & Fine-tuning Decision](docs/soc-cmdb-and-fine-tuning-decision.md) | Why CMDB first, fine-tuning deferred |
+| [Escalation Experiment](docs/soc-escalation-experiment-plan.md) | Temperature A/B test, action gate, verdict improvements |
+
+## License
 
 MIT — see [LICENSE](LICENSE).
 
----
+## Acknowledgments
 
-<p align="center">
-  <img src="assets/logo.png" alt="OpenHarness" width="48">
-  <br>
-  <strong>Oh my Harness!</strong>
-  <br>
-  <em>The model is the agent. The code is the harness.</em>
-</p>
-
-<div align="center">
-  <a href="https://star-history.com/#HKUDS/OpenHarness&Date">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/OpenHarness&type=Date&theme=dark" />
-      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/OpenHarness&type=Date" />
-      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/OpenHarness&type=Date" style="border-radius: 15px; box-shadow: 0 0 30px rgba(0, 217, 255, 0.3);" />
-    </picture>
-  </a>
-</div>
-
-<p align="center">
-  <em> Thanks for visiting ✨ OpenHarness!</em><br><br>
-  <img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.OpenHarness&style=for-the-badge&color=00d4ff" alt="Views">
-</p>
+Built on the [OpenHarness](https://github.com/HKUDS/OpenHarness) agent framework. SOC tools and harness design by kaini with Claude Opus 4.6.

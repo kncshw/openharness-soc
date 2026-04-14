@@ -26,7 +26,7 @@ set -euo pipefail
 # The default registry has 44+ tools (bash, agent, cron, etc.) that waste
 # tokens on every API call and risk confusing the model. Validated against
 # 26-alert drain run session logs: Gemma4 never called anything outside these 5.
-export SOC_ALLOWED_TOOLS="fortisoar_list_alerts,fortisoar_get_alert,fortisoar_resolve_alert,fortisoar_escalate_alert,faz_query_logs,faz_query_security_events"
+export SOC_ALLOWED_TOOLS="fortisoar_list_alerts,fortisoar_get_alert,fortisoar_resolve_alert,fortisoar_escalate_alert,faz_query_logs,faz_query_security_events,netbox_lookup_ip"
 
 # Resolve repo root regardless of where the user invoked the script from.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
