@@ -131,16 +131,16 @@ bin/bis-soc
 Edit `config/soc_whitelist.yaml` to add known-benign IPs:
 
 ```yaml
-- ip: 10.125.19.31
-  reason: "FortiRecon internal threat-intel collector"
-  added_by: kaini
-  added_on: 2026-04-08
+- ip: 192.168.1.100
+  reason: "Internal vulnerability scanner — expected to probe all hosts"
+  added_by: jdoe
+  added_on: 2026-01-15
   closure_reason: Risk Accept
 
-- cidr: 10.125.19.0/24
-  reason: "Threat-intel collector subnet"
-  added_by: kaini
-  added_on: 2026-04-08
+- cidr: 10.200.50.0/24
+  reason: "Threat-intel collector subnet — talks to suspicious destinations by design"
+  added_by: jdoe
+  added_on: 2026-01-15
   closure_reason: Risk Accept
 ```
 
